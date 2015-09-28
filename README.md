@@ -49,8 +49,8 @@ mv advancedrobotics/ stewart_platform/
 ### Build this workspace
 
 ```
-cd ~/stewart_ws/src/stewart_platform
-mkdir include
+cd ~/stewart_ws
+mkdir src/stewart_platform/include
 catkin build
 source ~/stewart_ws/devel/setup.bash
 sudo cp ~/stewart_ws/src/stewart_platform/dev_rules/*.rules /etc/udev/rules.d/
