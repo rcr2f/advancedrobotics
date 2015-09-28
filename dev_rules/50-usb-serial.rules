@@ -1,0 +1,4 @@
+# A copy of this file goes into /etc/udev/rules.d/
+# For reliable connection to dynamixels through USB2Dynamixel
+SUBSYSTEMS=="usb",DRIVERS=="usb",ATTRS{product}=="FT232R USB UART",ATTRS{idProduct}=="0000",SYMLINK+="dynamixel"
+SUBSYSTEMS=="usb",DRIVERS=="usb",ATTRS{product}=="FT232R USB UART",ATTRS{idProduct}=="6001",SYMLINK+="razor"

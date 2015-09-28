@@ -1,0 +1,4 @@
+# A copy of this file goes into /etc/udev/rules.d
+# For reliable connection to USB devices, USB ports writable by all users
+SUBSYSTEMS=="usb",KERNEL=="ttyACM[0-9]*",MODE="0666"
+SUBSYSTEMS=="usb",KERNEL=="ttyUSB[0-9]*",MODE="0666"

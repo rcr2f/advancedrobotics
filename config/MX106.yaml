@@ -1,0 +1,78 @@
+# MX-106T
+# 0 - 360 degrees
+# 0 - 4095 range -> resolution of 0.0879 degrees
+# Leg A
+servo_1: # set for counter-clockwise rotation
+  controller: 
+    package: dynamixel_controllers
+    module: joint_position_controller
+    type: JointPositionController
+  joint_name: one
+  joint_speed: 1.0
+  motor:
+    id: 1
+    init: 1024 # start at 90 degrees 
+    min: 110 # ~10 degrees (max down)
+    max: 2048 # 180 degrees (straight up)
+servo_2: # set for clockwise rotation
+  controller: 
+    package: dynamixel_controllers
+    module: joint_position_controller
+    type: JointPositionController
+  joint_name: two
+  joint_speed: 1.0
+  motor:
+    id: 2
+    init: 1024 # start at 90 degrees 
+    min: 110 # ~10 degrees (max down)
+    max: 2048 # 180 degrees (straight up)
+# Leg B
+servo_3: # set for counter-clockwise rotation
+  controller: 
+    package: dynamixel_controllers
+    module: joint_position_controller
+    type: JointPositionController
+  joint_name: three
+  joint_speed: 1.0
+  motor:
+    id: 3
+    init: 1024 # start at 90 degrees 
+    min: 110 # ~10 degrees (max down)
+    max: 2048 # 180 degrees (straight up)
+servo_4: # set for clockwise rotation
+  controller: 
+    package: dynamixel_controllers
+    module: joint_position_controller
+    type: JointPositionController
+  joint_name: four
+  joint_speed: 1.0
+  motor:
+    id: 4
+    init: 1024 # start at 90 degrees 
+    min: 110 # ~10 degrees (max down)
+    max: 2048 # 180 degrees (straight up)
+# Leg C
+servo_5: # set for counter-clockwise rotation
+  controller: 
+    package: dynamixel_controllers
+    module: joint_position_controller
+    type: JointPositionController
+  joint_name: five
+  joint_speed: 1.0
+  motor:
+    id: 5
+    init: 1024 # start at 90 degrees 
+    min: 110 # ~10 degrees (max down)
+    max: 2048 # 180 degrees (straight up)
+servo_6: # set for clockwise rotation
+  controller: 
+    package: dynamixel_controllers
+    module: joint_position_controller
+    type: JointPositionController
+  joint_name: six
+  joint_speed: 1.0
+  motor:
+    id: 6
+    init: 1024 # start at 90 degrees 
+    min: 110 # ~10 degrees (max down)
+    max: 2048 # 180 degrees (straight up)

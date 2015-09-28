@@ -1,0 +1,43 @@
+<!-- Launch the dynamixel controller -->
+<launch>
+  <node name="stewart_platform_servos" pkg="dynamixel_controllers" type="controller_manager.py" required="true" output="screen">
+    <rosparam>
+      namespace: dxl_manager
+      serial_ports: 
+        servo_port: 
+          port_name: "/dev/dynamixel_rs485"
+          baud_rate: 57142
+          min_motor_id: 1
+          max_motor_id: 25
+          update_rate: 60
+    </rosparam>
+  </node>
+
+  <!-- Start joint controller -->
+  <rosparam file="$(find stewart_platform)/config/MX106.yaml" command="load"/>
+  <node name="controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
+	args="--manager=dxl_manager
+              --port servo_port
+              servo_1
+	      servo_2
+	      servo_3
+	      servo_4
+	      servo_5
+	      servo_6"
+	output="screen"/>
+
+  <!-- Start meta controller -->
+  <rosparam file="$(find stewart_platform)/config/meta_controller.yaml" command="load"/>
+  <node name="controller_spawner_meta" pkg="dynamixel_controllers" type="controller_spawner.py"
+	args="--manager=dxl_manager
+              --type=meta
+              stewart_controller
+              servo_1
+	      servo_2
+	      servo_3
+	      servo_4
+	      servo_5
+	      servo_6"
+	output="screen"/>
+
+</launch>
