@@ -43,6 +43,7 @@ sudo apt-get install ros-indigo-rosserial-arduino ros-indigo-rosserial ros-indig
 ```
 cd ~/stewart_ws/src
 git clone <https://address>
+mv advancedrobotics/ stewart_platform/
 ```
 
 ### Build this workspace
@@ -60,6 +61,10 @@ roscd stewart_platform/
 
 ```
 sudo gedit ~/.bashrc
+```
+
+Add these 2 lines at the bottom:
+```
 source /opt/ros/indigo/setup.bash
 source ~/stewart_ws/devel/setup.bash
 ```
