@@ -35,7 +35,7 @@ Setup the workspace:
 ### Install ROS Dependencies
 
 ```
-sudo apt-get install ros-indigo-rosserial-arduino ros-indigo-rosserial ros-indigo-rosserial-server
+sudo apt-get install ros-indigo-rosserial-arduino ros-indigo-rosserial ros-indigo-rosserial-server python-catkin-tools
 ```
 
 ### Clone this repo into the catkin workspace
