@@ -54,8 +54,11 @@ mkdir src/stewart_platform/include
 catkin build
 source ~/stewart_ws/devel/setup.bash
 sudo cp ~/stewart_ws/src/stewart_platform/dev_rules/*.rules /etc/udev/rules.d/
+sudo udevadm trigger
 roscd stewart_platform/
 ```
+
+Make sure to unplug and replug the usb devices after running udevadm trigger.
 
 ### Setup the environment variables to be sourced on startup
 
@@ -92,6 +95,9 @@ You should see the motors move to the min range, max range, and then a neutral p
 ```
 rosrun stewart_platform stewart_ik_test
 ```
+
+stewart platform math and instructions are [here](http://www.instructables.com/id/Stewart-Platform/?ALLSTEPS)
+
 
 ### Communication with Sparkfun Razor 9DOF IMU
 
