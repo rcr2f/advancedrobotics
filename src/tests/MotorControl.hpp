@@ -19,7 +19,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-
+#include "InverseKinematics.hpp"
 
 namespace stewart_platform
 {
@@ -49,6 +49,10 @@ private:
   double min_platform_height_;
   double max_platform_height_;
   double platform_height_;
+
+  double servoMinPos = -1.4;
+  double servoMaxPos = 1.5708;
+
 
 public:
 
@@ -209,36 +213,11 @@ public:
 
   }
 
-  void calculateArmLengths()
+  double degToRad(double degrees)
   {
-    /***** DEV NOTE *****/
-    // keeps platform at the average height
-    // assumes base is moving and platform is to remain stationary
-    // assumes that base rotates about center
-
-    Eigen::Affine3d base_pose = Eigen::Affine3d::Identity();
-    base_pose *= 
-      Eigen::AngleAxisd(base_orientation_[0], Eigen::Vector3d::UnitX()) * 
-      Eigen::AngleAxisd(base_orientation_[1], Eigen::Vector3d::UnitY()); 
-    
-    // get orientation of base points in WCS
-    for (std::size_t i = 0; i < 6; i++)
-    {
-      calc_arm_loc_on_base_[i] = base_pose * arm_loc_on_base_[i];
-      ROS_DEBUG_STREAM_NAMED("ik_test","calc_arm_loc_on_base_[" << i << "] = " <<
-                             calc_arm_loc_on_base_[i][0] << ", " <<
-                             calc_arm_loc_on_base_[i][1] << ", " <<
-                             calc_arm_loc_on_base_[i][2]);
-    }
-
-    // calculate desired arm length
-    for (std::size_t i = 0; i < 6; i++)
-    {
-      calc_arm_lengths_[i] = (arm_loc_on_platform_[i] - calc_arm_loc_on_base_[i]).norm();
-      ROS_DEBUG_STREAM_NAMED("ik_test","calc_arm_lengths_[" << i << "] = " << calc_arm_lengths_[i]);
-    }
-
+    return degrees*3.14159/180;
   }
+
 
   bool sendServoCommand(const double angles[6])
   {
@@ -305,3 +284,4 @@ public:
 
 
 }; // end class MotorControl
+}
