@@ -15,14 +15,25 @@ class InverseKinematics
    float platformRadius = 32;
    float servoArmLength = 36;
    float legLength = 270;
-   
+
+   //private variables for calculations
+   double[6] desiredPlatformPosition;
+
+
+   double[] getServoAngles(double roll, double pitch, double yaw, double x_pos = 0, double y_pos = 0, double z_pos = 0)
+   {
+   		desiredTilt = {roll, pitch, yaw, x_pos, y_pos, z_pos};
+   		calcLegLengths();
+   		return calcArmAngles();
+   }
+
    void calcLegLengths()
    {
    }
 
-   void calcArmAngles()
+   double[] calcArmAngles()
    {
-
+   		return [];
    }
 };
 
