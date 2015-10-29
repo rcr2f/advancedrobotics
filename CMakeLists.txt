@@ -12,8 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(cmake_modules REQUIRED)
-find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED regex)
 
 generate_messages(
 )
@@ -26,7 +24,6 @@ catkin_package(
   DEPENDS
     Eigen
   INCLUDE_DIRS
-    include
 )
 
 ###########
@@ -34,25 +31,10 @@ catkin_package(
 ###########
 
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
 )
 
-add_executable(stewart_ik_test
-  src/tests/ik_test.cpp
-)
-target_link_libraries(stewart_ik_test
-  ${catkin_LIBRARIES}
-)
-
-add_executable(stewart_accel_test
-  src/tests/accel_test.cpp
-)
-target_link_libraries(stewart_accel_test
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-)
 
 #############
 ## Install ##
