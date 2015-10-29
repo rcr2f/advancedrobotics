@@ -52,6 +52,7 @@ private:
 
   double servoMinPos = -1.4;
   double servoMaxPos = 1.5708;
+  double servoNeutralPos = 0.0;
 
 
 public:
@@ -59,7 +60,7 @@ public:
   MotorControl()
     : nh_("~")
   {
-    ROS_INFO_STREAM_NAMED("ik_test","\033[1;32m" << "Initializing IK Test..." << "\033[0m");
+    ROS_INFO_STREAM_NAMED("MotorControl_Setup","\033[1;32m" << "Initializing Servo Motors.." << "\033[0m");
     
     initialize();
 
@@ -79,46 +80,15 @@ public:
       pub_topic.str("");
       pub_topic << "/servo_" << i + 1 << "/command";
       servo_pubs_[i] = nh_.advertise<std_msgs::Float64>(pub_topic.str(),10);      
-      ROS_DEBUG_STREAM_NAMED("ik_test","Setting up publisher: " << pub_topic.str());      
+      ROS_DEBUG_STREAM_NAMED("MotorControl_Setup","Setting up publisher: " << pub_topic.str());      
     }
     ros::Duration(1.0).sleep();
 
     /***** Bring Platform to neutral position *****/
-    // TODO: Figure out why JointTrajectory command doesn't work
-    // double new_position[6];
-    // for (std::size_t i = 0; i < 6; i++)
-    // {
-    //   new_position[i] = 1.5708;
-    // }
-    // sendServoCommand(new_position);
-
+    ROS_INFO_STREAM_NAMED("MotorControl_Setup","Moving to neutral position...");
     for (std::size_t i = 0; i < 6; i++)
     {
-      sendSingleServoCommand(i, 0.0);
-    }
-    ros::Duration(2.0).sleep();
-
-    /***** Go through full range of motion *****/
-    ROS_INFO_STREAM_NAMED("ik_test","\033[1;33m" << "Testing range of motion" << "\033[0m");
-
-    ROS_INFO_STREAM_NAMED("ik_test","Moving to minimum range...");
-    for (std::size_t i = 0; i < 6; i++)
-    {
-      sendSingleServoCommand(i, -1.4);
-    }
-    ros::Duration(2.0).sleep();
-
-    ROS_INFO_STREAM_NAMED("ik_test","Moving to maximum range...");
-    for (std::size_t i = 0; i < 6; i++)
-    {
-      sendSingleServoCommand(i, 1.5708);
-    }
-    ros::Duration(2.0).sleep();
-
-    ROS_INFO_STREAM_NAMED("ik_test","Moving to neutral position...");
-    for (std::size_t i = 0; i < 6; i++)
-    {
-      sendSingleServoCommand(i, 0.0);
+      sendSingleServoCommand(i, servoNeutralPos);
     }
     ros::Duration(2.0).sleep();
   }
@@ -203,10 +173,10 @@ public:
 
   void orientationCallback(const geometry_msgs::Vector3 msg)
   {
-    base_orientation_[0] = msg.x * 3.14159 / 180.0;
-    base_orientation_[1] = msg.y * 3.14159 / 180.0;
-    base_orientation_[2] = msg.z * 3.14159 / 180.0;
-    ROS_DEBUG_STREAM_NAMED("ik_test","orientation: " << base_orientation_[0] << ", " << 
+    base_orientation_[0] = degToRad(msg.x);
+    base_orientation_[1] = degToRad(msg.y);
+    base_orientation_[2] = degToRad(msg.z);
+    ROS_DEBUG_STREAM_NAMED("MotorControl_Setup","orientation: " << base_orientation_[0] << ", " << 
                            base_orientation_[1] << ", " << base_orientation_[2]);
 
     calculateArmLengths();
@@ -218,11 +188,16 @@ public:
     return degrees*3.14159/180;
   }
 
+  bool isInServoRange(double radians)
+  {
+    return !(radians > servoMaxPos || radians < servoMinPos);
+  }
+
 
   bool sendServoCommand(const double angles[6])
   {
     // create message header
-    ROS_DEBUG_STREAM_NAMED("ik_test","sending command to servo...");
+    ROS_DEBUG_STREAM_NAMED("MotorControl_Setup","sending command to servo...");
     trajectory_msg_.header.seq = id_++;
     trajectory_msg_.header.stamp = ros::Time::now();
     trajectory_msg_.header.frame_id = "/world";
