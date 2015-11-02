@@ -128,7 +128,7 @@ class StewartNode(object):
         self.publish_servo_angles([0] * 6)
 
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     import sys
 
     # Let's instantiate our Stewart platform
@@ -148,13 +148,16 @@ if __name__ == '__main__':
     # And the ROS node
     node = StewartNode(stewart, log_level=rospy.DEBUG)
 
-    if len(sys.argv) == 1:
+    # TODO: use ROS parameters
+    args = sys.argv
+    args = [arg for arg in args if not arg.startswith('__')]
+    if len(args) == 1:
         # No args, just keep node alive
         rospy.spin()
-    elif sys.argv[1] == 'test':
+    elif args[1] == 'test':
         # Go up and down
         node.test()
-    elif sys.argv[1] == 'manual_control':
+    elif args[1] == 'manual_control':
         from tf.transformations import (euler_from_quaternion,
                                         quaternion_from_euler)
         from utils import dispatch, _Getch
@@ -171,8 +174,10 @@ if __name__ == '__main__':
             q : quit\n""")
         while True:
             p, o = pose.position, euler_from_quaternion(pose.orientation)
-            rospy.loginfo("Current position: {}".format(p))
-            rospy.loginfo("Current orientation: {}".format(o))
+            rospy.loginfo(
+                "Current position (mm): {}".format(p))
+            rospy.loginfo(
+                "Current orientation (deg): {}".format(np.rad2deg(o)))
 
             gchr = _Getch()
             user_input = gchr()
@@ -183,7 +188,7 @@ if __name__ == '__main__':
                         orientation=quaternion_from_euler(*o))
 
             node.listen_pose(pose)
-    elif sys.argv[1] == '-h':
+    elif args[1] == '-h':
         rospy.loginfo(
             """
     If no arguments are provided, start node that listens for pose
@@ -194,5 +199,6 @@ if __name__ == '__main__':
     If called with argument `manual_control`, the platform can be
     controlled with the keyboard.""")
     else:
-        rospy.logerr("Unrecognized command, pass option -h for help")
-
+        rospy.logerr(
+            "Unrecognized command {}, pass option -h for help".format(
+                args[1]))
