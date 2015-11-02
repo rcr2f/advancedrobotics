@@ -94,17 +94,16 @@ Then, you can run the start the main node:
 rosrun stewart_platform stewart.py
 ```
 
-That script accepts different options (see `rosrun stewart_platform stewart.py -h`), and you may first want to test that the servos are working well by passing the `test` argument:
+That script accepts different options, and you may first want to test that the servos are working well by passing the `test` argument:
 ```
 rosrun stewart_platform stewart.py test
 ```
 You should see the motors move to the min range, max range, and then a neutral position when running this test. If they don't move, but you don't have any errors, try restarting everything. If you have errors, good luck!
 
-Manual control using the keyboard is also straight forward:
+If you want to manually control the pose, launch the following node:
 ```
-rosrun stewart_platform stewart.py manual_control
+rosrun stewart_platform controller.py
 ```
-
 
 stewart platform math and instructions are [here](http://www.instructables.com/id/Stewart-Platform/?ALLSTEPS)
 

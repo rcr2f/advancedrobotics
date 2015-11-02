@@ -3,7 +3,8 @@ from math import pi
 
 
 def dispatch(user_input, xyz, rpy, xyz_delta=0.004, rpy_delta=5 / 180 * pi):
-    p, o = list(xyz), list(rpy)
+    p = [xyz.x, xyz.y, xyz.z]
+    o = list(rpy)
 
     mapping = {'w': (p, 0, xyz_delta),
                's': (p, 0, -xyz_delta),
@@ -21,7 +22,6 @@ def dispatch(user_input, xyz, rpy, xyz_delta=0.004, rpy_delta=5 / 180 * pi):
 
     try:
         obj, idx, delta = mapping[user_input]
-        print(delta)
         obj[idx] += delta
     except KeyError:
         pass

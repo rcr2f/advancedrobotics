@@ -46,8 +46,11 @@ class Stewart(object):
              [-stheta, sphi*ctheta, cphi*ctheta]])
 
     def _calc_legs(self, pose):
-        translation = np.array(pose.position)[:, np.newaxis]
-        rotation = self._rotation_matrix(pose.orientation)
+        pos = [pose.position.x, pose.position.y, pose.position.z]
+        orient = [pose.orientation.x, pose.orientation.y,
+                  pose.orientation.z, pose.orientation.w]
+        translation = np.array(pos)[:, np.newaxis]
+        rotation = self._rotation_matrix(orient)
         # Must be possible to use tf for affine transformations. Maybe
         # using PyKDL (?)
         # http://wiki.ros.org/kdl/Tutorials/Frame%20transformations%20%28Python%29
@@ -157,48 +160,3 @@ if __name__ == '__main__':
     elif args[1] == 'test':
         # Go up and down
         node.test()
-    elif args[1] == 'manual_control':
-        from tf.transformations import (euler_from_quaternion,
-                                        quaternion_from_euler)
-        from utils import dispatch, _Getch
-        p = [0.0, 0.0, 0.275]
-        o = [0, 0, 0, 1]
-        pose = Pose(position=p, orientation=o)
-        rospy.loginfo(
-            """\n\nCONTROLLER KEYMAP (HELP):
-            wasd : control XY
-            12 : control Z
-            ijkl : control roll & pitch
-            34 : control yaw
-
-            q : quit\n""")
-        while True:
-            p, o = pose.position, euler_from_quaternion(pose.orientation)
-            rospy.loginfo(
-                "Current position (mm): {}".format(p))
-            rospy.loginfo(
-                "Current orientation (deg): {}".format(np.rad2deg(o)))
-
-            gchr = _Getch()
-            user_input = gchr()
-            if user_input == 'q':
-                break
-            p, o = dispatch(user_input, p, o)
-            pose = Pose(position=p,
-                        orientation=quaternion_from_euler(*o))
-
-            node.listen_pose(pose)
-    elif args[1] == '-h':
-        rospy.loginfo(
-            """
-    If no arguments are provided, start node that listens for pose
-    requests on /stewart_platform/pose
-
-    If called with argument `test`, move up and down.
-
-    If called with argument `manual_control`, the platform can be
-    controlled with the keyboard.""")
-    else:
-        rospy.logerr(
-            "Unrecognized command {}, pass option -h for help".format(
-                args[1]))
