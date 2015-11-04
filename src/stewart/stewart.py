@@ -7,8 +7,12 @@ from scipy.optimize import fmin_bfgs
 
 import rospy
 import tf
+from tf import transformations
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Pose
+from sensor_msgs.msg import Imu
+
+from pid import PID
 
 
 class Stewart(object):
@@ -46,9 +50,11 @@ class Stewart(object):
              [-stheta, sphi*ctheta, cphi*ctheta]])
 
     def _calc_legs(self, pose):
-        pos = [pose.position.x, pose.position.y, pose.position.z]
-        orient = [pose.orientation.x, pose.orientation.y,
-                  pose.orientation.z, pose.orientation.w]
+        # pos = [pose.position.x, pose.position.y, pose.position.z]
+        # orient = [pose.orientation.x, pose.orientation.y,
+        #           pose.orientation.z, pose.orientation.w]
+        pos = pose.position
+        orient = pose.orientation
         translation = np.array(pos)[:, np.newaxis]
         rotation = self._rotation_matrix(orient)
         # Must be possible to use tf for affine transformations. Maybe
@@ -93,6 +99,9 @@ class StewartNode(object):
     """
     def __init__(self, platform, log_level=rospy.INFO):
         self.platform = platform
+        # Quaternion, xyzw
+        self.desired_orientation = np.array([0, 0, 0, 1], dtype=np.float64)
+        self.desired_position = np.array([0, 0, 0.275], dtype=np.float64)
         self.nh = rospy.init_node("stewart", log_level=log_level)
 
         rospy.logdebug("Setting up servo publishers...")
@@ -105,11 +114,109 @@ class StewartNode(object):
         self.pose_listener = rospy.Subscriber("/stewart_platform/pose",
                                               Pose,
                                               self.listen_pose)
+        rospy.logdebug("Setting up AHRS listener...")
+        self.ahrs_listener = rospy.Subscriber("/stewart_platform/imu",
+                                              Imu,
+                                              self.listen_imu)
+
+        kp = 1.9
+        tu = 0.2
+        self.rp_pid = PID(0.8, 0.05, 0.0000, 100000)
 
     def listen_pose(self, pose):
-        servo_angles = self.platform.ik(pose)
+        self.desired_orientation[:] = [pose.orientation.x,
+                                       pose.orientation.y,
+                                       pose.orientation.z,
+                                       pose.orientation.w]
+        self.desired_position[:] = [pose.position.x,
+                                    pose.position.y,
+                                    pose.position.z]
+
+    def listen_imu(self, imu):
+        current_orientation = np.array([imu.orientation.x,
+                                        imu.orientation.y,
+                                        imu.orientation.z,
+                                        imu.orientation.w])
+        current_rpy = list(transformations.euler_from_quaternion(current_orientation))
+        # No care about yaw, but must be close to zero
+        current_rpy[-1] = 0
+        desired_rpy = list(transformations.euler_from_quaternion(self.desired_orientation))
+        desired_rpy[-1] = 0
+        corrected = self.rp_pid(desired_rpy, current_rpy)
+        corrected_orientation = transformations.quaternion_multiply(
+            transformations.quaternion_from_euler(*corrected),
+            transformations.quaternion_from_euler(*current_rpy))
+
+        rospy.loginfo(
+            "Current orientation (deg): {}".format(
+                np.rad2deg(transformations.euler_from_quaternion(
+                    current_orientation))))
+        rospy.loginfo(
+            "Desired orientation (deg): {}".format(
+                np.rad2deg(transformations.euler_from_quaternion(
+                    self.desired_orientation))))
+        rospy.loginfo(
+            "Corrected orientation (deg): {}".format(
+                np.rad2deg(transformations.euler_from_quaternion(
+                    corrected_orientation))))
+        rospy.loginfo("Desired position: {}".format(
+            self.desired_position))
+
+        setpoint_pose = Pose(self.desired_position, corrected_orientation)
+
+        servo_angles = self.platform.ik(setpoint_pose)
         rospy.logdebug(
-            "Servo angles (in deg): {}".format(np.rad2deg(servo_angles)))
+            "Servo angles (deg): {}".format(np.rad2deg(servo_angles)))
+        self.publish_servo_angles(servo_angles)
+
+    def listen_imu_quaternion(self, imu):
+        """Doesn't work b/c desired yaw is too far from possible yaw"""
+        current_orientation = np.array([imu.orientation.x,
+                                        imu.orientation.y,
+                                        imu.orientation.z,
+                                        imu.orientation.w])
+        # current_angular_speed = np.array([imu.angular_velocity.x,
+        #                                   imu.angular_velocity.y,
+        #                                   imu.angular_velocity.z])
+        diff_orientation = transformations.quaternion_multiply(
+            self.desired_orientation,
+            # Unit quaternion => inverse = conjugate / norm = congugate
+            transformations.quaternion_conjugate(current_orientation))
+
+        assert np.allclose(
+            transformations.quaternion_multiply(diff_orientation,
+                                                current_orientation),
+            self.desired_orientation)
+
+        # diff_r, diff_p, diff_y = transformations.euler_from_quaternion(
+        #     diff_orientation)
+        # rospy.loginfo("Orientation error (quaternion): {}".format(diff_orientation))
+        # rospy.loginfo(
+        #     "Orientation error (deg): {}".format(
+        #         np.rad2deg([diff_r, diff_p, diff_y]))
+        # )
+        # out = self.pitch_controller(diff_p)
+
+        corrected_orientation = transformations.quaternion_multiply(
+            quaternion_power(diff_orientation, 1.5),
+            self.desired_orientation)
+        rospy.loginfo(
+            "Desired orientation (deg): {}".format(
+                np.rad2deg(transformations.euler_from_quaternion(
+                    self.desired_orientation))))
+        rospy.loginfo(
+            "Corrected orientation (deg): {}".format(
+                np.rad2deg(transformations.euler_from_quaternion(
+                    corrected_orientation))))
+
+        rospy.loginfo("Desired position: {}".format(
+            self.desired_position))
+
+        setpoint_pose = Pose(self.desired_position, corrected_orientation)
+
+        servo_angles = self.platform.ik(setpoint_pose)
+        rospy.logdebug(
+            "Servo angles (deg): {}".format(np.rad2deg(servo_angles)))
         self.publish_servo_angles(servo_angles)
 
     def publish_servo_angles(self, angles):
@@ -129,6 +236,23 @@ class StewartNode(object):
         rospy.sleep(2)
         rospy.loginfo("Moving to neutral height...")
         self.publish_servo_angles([0] * 6)
+
+
+def quaternion_exp(q):
+    xyz, w = q[:3], q[3]
+    nrm = np.linalg.norm(xyz)
+    new_w = math.exp(w) * math.cos(nrm)
+    new_xyz = np.array(xyz) * (math.sin(nrm) / nrm * math.exp(w))
+    return list(new_xyz) + [new_w]
+
+
+def quaternion_power(q, alpha):
+    xyz, w = q[:3], q[3]
+    q_nrm = np.linalg.norm(q)
+    theta = math.acos(w / q_nrm)
+    new_w = q_nrm**alpha * math.cos(alpha * theta)
+    new_xyz = q_nrm**alpha * math.sin(alpha * theta) * np.array(xyz) / (q_nrm * math.sin(theta))
+    return list(new_xyz) + [new_w]
 
 
 if __name__ == '__main__':
