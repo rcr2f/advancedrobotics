@@ -6,16 +6,16 @@ import numpy as np
 class PID(object):
     def __init__(self, p, i, d, anti_windup):
         self.pub_p = rospy.Publisher("/stewart_platform/pid/p",
-                                   Float64,
-                                   queue_size=1)
+                                     Float64,
+                                     queue_size=1)
         self.pub_i = rospy.Publisher("/stewart_platform/pid/i",
-                                   Float64,
-                                   queue_size=1)
+                                     Float64,
+                                     queue_size=1)
         self.pub_d = rospy.Publisher("/stewart_platform/pid/d",
-                                   Float64,
-                                   queue_size=1)
+                                     Float64,
+                                     queue_size=1)
         self.p, self.i, self.d = p, i, d
-        self.anti_windup = anti_windup
+        self.anti_windup = anti_windup / i
         self.prev_err = 0.0
         self.i_err = 0.0
 
