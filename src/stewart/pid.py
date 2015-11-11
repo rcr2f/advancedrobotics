@@ -15,7 +15,7 @@ class PID(object):
                                    Float64,
                                    queue_size=1)
         self.p, self.i, self.d = p, i, d
-        self.anti_windup = anti_windup
+        self.anti_windup = anti_windup / i
         self.prev_err = 0.0
         self.i_err = 0.0
 
