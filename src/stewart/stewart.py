@@ -119,9 +119,8 @@ class StewartNode(object):
                                               Imu,
                                               self.listen_imu)
 
-        kp = 1.9
-        tu = 0.2
-        self.rp_pid = PID(0.8, 0.05, 0.0000, 100000)
+        self.rp_pid = PID(1.0, 0.005, 0.0, 0.3)
+        self.NN, self.t0 = 0, rospy.get_time()
 
     def listen_pose(self, pose):
         self.desired_orientation[:] = [pose.orientation.x,
@@ -132,35 +131,37 @@ class StewartNode(object):
                                     pose.position.y,
                                     pose.position.z]
 
+        rospy.logdebug(
+            "Desired orientation (deg): {}".format(
+                np.rad2deg(transformations.euler_from_quaternion(
+                    self.desired_orientation))))
+        rospy.logdebug("Desired position: {}".format(
+            self.desired_position))
+
     def listen_imu(self, imu):
+        # node can sleep for 16 out of 20 ms without dropping any messages
+        # rospy.sleep(16.0/1000.0)
+        # self.NN += 1
+        # if rospy.get_time() - self.t0 > 1:
+        #     rospy.logfatal("Published {} messages in 1 s, {} Hz".format(self.NN, self.NN))
+        #     self.NN, self.t0 = 0, rospy.get_time()
         current_orientation = np.array([imu.orientation.x,
                                         imu.orientation.y,
                                         imu.orientation.z,
                                         imu.orientation.w])
+        current_angular_speed = np.array([imu.angular_velocity.x,
+                                          imu.angular_velocity.y,
+                                          0.0])
+                                          
         current_rpy = list(transformations.euler_from_quaternion(current_orientation))
         # No care about yaw, but must be close to zero
         current_rpy[-1] = 0
         desired_rpy = list(transformations.euler_from_quaternion(self.desired_orientation))
         desired_rpy[-1] = 0
-        corrected = self.rp_pid(desired_rpy, current_rpy)
+        corrected = self.rp_pid(desired_rpy, current_rpy, current_angular_speed)
         corrected_orientation = transformations.quaternion_multiply(
             transformations.quaternion_from_euler(*corrected),
             transformations.quaternion_from_euler(*current_rpy))
-
-        rospy.loginfo(
-            "Current orientation (deg): {}".format(
-                np.rad2deg(transformations.euler_from_quaternion(
-                    current_orientation))))
-        rospy.loginfo(
-            "Desired orientation (deg): {}".format(
-                np.rad2deg(transformations.euler_from_quaternion(
-                    self.desired_orientation))))
-        rospy.loginfo(
-            "Corrected orientation (deg): {}".format(
-                np.rad2deg(transformations.euler_from_quaternion(
-                    corrected_orientation))))
-        rospy.loginfo("Desired position: {}".format(
-            self.desired_position))
 
         setpoint_pose = Pose(self.desired_position, corrected_orientation)
 
@@ -273,7 +274,7 @@ if __name__ == '__main__':
     stewart = Stewart(base_coordinates, top_coordinates,
                       servo_arm_length, leg_length, betas)
     # And the ROS node
-    node = StewartNode(stewart, log_level=rospy.DEBUG)
+    node = StewartNode(stewart, log_level=rospy.INFO)
 
     # TODO: use ROS parameters
     args = sys.argv
