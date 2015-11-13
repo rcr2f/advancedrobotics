@@ -23,14 +23,14 @@ Install ROS indigo if you haven't already: http://wiki.ros.org/indigo/Installati
 
 Setup environment variables:
 ```
-		source /opt/ros/indigo/setup.bash
+source /opt/ros/indigo/setup.bash
 ```
 
 Setup the workspace:
 ```
-		mkdir -p ~/stewart_ws/src
-		cd ~/stewart_ws/src
-		catkin_init_workspace
+mkdir -p ~/stewart_ws/src
+cd ~/stewart_ws/src
+catkin_init_workspace
 ```
 ### Install ROS Dependencies
 
@@ -89,11 +89,20 @@ In a new terminal, bring up the dynamixel servos:
 roslaunch stewart_platform controller_manager.launch
 ```
 
-## In a new terminal(s):
-### Stewart Platform Test
-You should see the motors move to the min range, max range, and then a neutral position when running this test. If they don't move, but you don't have any errors, try restarting everything. If you have errors, good luck!
+Then, you can run the start the main node:
 ```
-rosrun stewart_platform stewart_ik_test
+rosrun stewart_platform stewart.py
+```
+
+That script accepts different options, and you may first want to test that the servos are working well by passing the `test` argument:
+```
+rosrun stewart_platform stewart.py test
+```
+You should see the motors move to the min range, max range, and then a neutral position when running this test. If they don't move, but you don't have any errors, try restarting everything. If you have errors, good luck!
+
+If you want to manually control the pose, launch the following node:
+```
+rosrun stewart_platform controller.py
 ```
 
 stewart platform math and instructions are [here](http://www.instructables.com/id/Stewart-Platform/?ALLSTEPS)

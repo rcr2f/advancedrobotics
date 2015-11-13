@@ -1,0 +1,6 @@
+<!-- Launch dynamixel controllers, razor IMU and Stewart platform -->
+<launch>
+    <include file="$(find stewart_platform)/launch/controller_manager.launch"/>
+    <include file="$(find razor_imu_9dof)/launch/razor-pub.launch"/>
+    <node name="stewart_platform" pkg="stewart_platform" type="stewart.py" />
+</launch>
