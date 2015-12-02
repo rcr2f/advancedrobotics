@@ -5,9 +5,15 @@ Code repository and issue tracker for the Fall 2015 of "Advanced Robotics" (Inde
 
 http://correll.cs.colorado.edu/?page_id=3748
 
-# Stewart Platform
-
 This repo contains the files necessary to build and control a Stewart platform.
+
+### Outline of this README
+
+1. Getting Started
+2. Setting up the main Stewart Platform Workspace
+3. Setting up the IMU workspace
+4. Running the Stewart Platform
+5. Windows Dynamixel Manager
 
 # Getting Started
 
@@ -17,7 +23,6 @@ This code uses:
 
 - ROS Indigo
 
-### Setup the ROS Environment 
 
 Install ROS indigo if you haven't already: http://wiki.ros.org/indigo/Installation/Ubuntu
 
@@ -26,17 +31,28 @@ Setup environment variables:
 source /opt/ros/indigo/setup.bash
 ```
 
+Additional dependencies to install:
+```
+sudo apt-get install ros-indigo-rosserial-arduino ros-indigo-rosserial ros-indigo-rosserial-server python-catkin-tools
+```
+
+Install Dynamixel Dependencies:
+```
+sudo apt-get install ros-indigo-dynamixel-motor
+```
+
+The inverse kinematics calculations for the stewart platform are [here](http://www.instructables.com/id/Stewart-Platform/?ALLSTEPS).
+
+
+# Setting up the main Stewart Platform workspace
+
 Setup the workspace:
 ```
 mkdir -p ~/stewart_ws/src
 cd ~/stewart_ws/src
 catkin_init_workspace
 ```
-### Install ROS Dependencies
 
-```
-sudo apt-get install ros-indigo-rosserial-arduino ros-indigo-rosserial ros-indigo-rosserial-server python-catkin-tools
-```
 
 ### Clone this repo into the catkin workspace
 
@@ -60,23 +76,85 @@ roscd stewart_platform/
 
 Make sure to unplug and replug the usb devices after running udevadm trigger.
 
-### Setup the environment variables to be sourced on startup
+
+
+# Setting up the IMU Workspace
+
+A [Razor](https://github.com/ptrbrtz/razor-9dof-ahrs/wiki/Tutorial) tutorial. Use this tutorial to calibrate the Sparkfun Razor 9DOF IMU.
+
+**NOTE** Yaw will not be correct if the magnetometer is not set up properly.
+
+
+#### Razor Workspace:
+
+Create a separate workspace for the IMU using similar instuctions. Substitute the command "catkin_make" for "catkin build". Use this [source](https://github.com/KristofRobot/razor_imu_9dof) or another similar one. A few more things will need to be done so that the IMU is calibrated and communicating with the other ros nodes. 
+
+Modify my_razor.yaml (calibration may vary on your IMU):
 
 ```
-sudo gedit ~/.bashrc
+## USB port
+port: /dev/razor
+
+##### Calibration ####
+### accelerometer
+accel_x_min: -289.0
+accel_x_max: 292.0
+accel_y_min: -263.0
+accel_y_max: 316.0
+accel_z_min: -279.0
+accel_z_max: 232.0
+
+### magnetometer — should be calibrated when IMU is mounted to stewart platform
+# standard calibration
+magn_x_min: -600.0
+magn_x_max: 600.0
+magn_y_min: -600.0
+magn_y_max: 600.0
+magn_z_min: -600.0
+magn_z_max: 600.0
+
+# AHRS to robot calibration
+imu_yaw_calibration: 0.0
+
+### gyroscope
+gyro_average_offset_x: -40.71
+gyro_average_offset_y: 17.44
+gyro_average_offset_z: -2.55
 ```
 
-Add these 2 lines at the bottom:
+Modify the publishers in imu_node.py:
 ```
-source /opt/ros/indigo/setup.bash
-source ~/stewart_ws/devel/setup.bash
+pub = rospy.Publisher('/stewart_platform/imu', Imu, queue_size=1)
+...
+diag_pub = rospy.Publisher('/stewart_platform/imu/diagnostics', DiagnosticArray, queue_size=1)
+
 ```
+
+Modify the subscriber in display_3D_visualization.py:
+```
+sub = rospy.Subscriber('/stewart_platform/imu', Imu, processIMU_message)
+```
+
+With roscore running, launch the IMU node:
+```
+roslaunch razor_imu_9dof razor-pub-and-display.launch
+```
+
 
 # Running the Stewart Platform
 
-Install Dynamixel Dependencies:
+### Setup the environment variables to be sourced on startup
+
+
 ```
-sudo apt-get install ros-indigo-dynamixel-motor
+gedit ~/.bashrc
+```
+
+Add these 3 lines at the bottom. Make sure the workspace names are correct.
+```
+source /opt/ros/indigo/setup.bash
+source ~/stewart_ws/devel/setup.bash
+source ~/razor_ws/devel/setup.bash
 ```
 
 Make sure roscore is running. If not, run this command in a separate terminal:
@@ -89,7 +167,7 @@ In a new terminal, bring up the dynamixel servos:
 roslaunch stewart_platform controller_manager.launch
 ```
 
-Then, you can run the start the main node:
+Then, you can start the main node:
 ```
 rosrun stewart_platform stewart.py
 ```
@@ -100,59 +178,19 @@ rosrun stewart_platform stewart.py test
 ```
 You should see the motors move to the min range, max range, and then a neutral position when running this test. If they don't move, but you don't have any errors, try restarting everything. If you have errors, good luck!
 
-If you want to manually control the pose, launch the following node:
+If you want to manually control the pose from the keyboard, launch the following node:
 ```
 rosrun stewart_platform controller.py
 ```
 
-stewart platform math and instructions are [here](http://www.instructables.com/id/Stewart-Platform/?ALLSTEPS)
 
 
-### Communication with Sparkfun Razor 9DOF IMU
-
-```
-rosrun stewart_platform stewart_accel_test
-```
-
-A [Razor](https://github.com/ptrbrtz/razor-9dof-ahrs/wiki/Tutorial) tutorial. Use this tutorial to calibrate the Razor.
-
-**NOTE** Yaw will not be correct if the magnetometer is not set up properly.
-
-You can view the data in a serial monitor tool, such as Arduino or PuTTy. 
-#### To use Arduino:
-Install arduino from webpage, not distro.
-
-`rosserial_arduino` Tutorials are [here](http://wiki.ros.org/rosserial_arduino/Tutorials)
-
-Start Arduino
-
-Change the Serial Port to the one that the Sparkfun Razor is plugged into by navigating to and changing Tools -> Serial Port -> /dev/ttyUSB#
-
-Navigate to Tools -> Serial Monitor
-
-Change the baud rate to 57600
-
-You should see scrolling data that changes when you move the IMU around and that looks similar to:
-```
-#YPR=-157.65,2.94,-0.14
-#YPR=-157.67,2.95,-0.15
-#YPR=-157.69,2.95,-0.14
-#YPR=-157.72,2.96,-0.13
-...
-```
 
 
-## Windows Dynamixel Manager
+# Windows Dynamixel Manager
 download the [RoboPlus software](http://en.robotis.com/BlueAD/board.php?bbs_id=downloads&mode=view&bbs_no=1132559&page=1&key=&keyword=&sort=&scate=SOFTWARE) from dynamixel
 
 see [this page](http://learn.trossenrobotics.com/34-blog/140-ftdi-2-12-00-notice-robotis-usb2dynamixel-cm-530-and-ln-101-october-2014.html) for driver installation problems
 
 Use the Dynamixel wizard to set up the servos. 2, 4, 6 need to be in the reverse direction mode. The files in this package assume the communication baud rate is (0x34) 57600.
 
-
-# Hardware Build Notes
-
-* Remember to wire up the servos before installing them
-* Add a laser cut hole to bottom of servo stands for easer cable routing
-* Ensure servo horns are aligned to the zero position.
-* Make all bars the same length and command servos to same position before installing the upper plate.
